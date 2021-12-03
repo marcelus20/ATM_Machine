@@ -1,0 +1,10 @@
+#DOCKER COMPOSE FILE
+version: '3'
+
+services:
+  atm:
+   build: ./atm
+   ports:
+     - "8080:8080"
+   #depends_on:
+   #  - db
