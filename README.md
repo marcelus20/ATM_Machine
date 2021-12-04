@@ -41,45 +41,67 @@ If you wish to only test the backend, here are the endpoints you can test.
 - Endpoint: ```/status```
 - method: **GET**
 - Example Request: 
-```
+```bash
 curl -X GET localhost:8080/status
 ```
 - Example Response:
-```
+```bash
 {"fifties":10,"twenties":30,"tenners":30,"fivers":20,"total":1500.0}
 ```
 ---
-#### Check Account Balance 
-You first need to create a session token to authenticate with the system:
-
+#### Creating a session token
 - Endpoint: **/session**
 - method: **POST**
 - Expected Body Parameters ```accountNumber: Number|Long``` and ```pin: String``` 
 - Example Request:
-```
+```bash
 curl --header "Content-Type: application/json" \
 --request POST \
 --data '{"accountNumber":123456789,"pin":"1234"}' \
 http://localhost:8080/session
 ```
 - Example Response:
+```bash
+{"accountId":123456789,"token":"kkISXzefRsfN","expires":1638611411706} #It lasts only one minute!
 ```
-{"accountId":123456789,"token":"kkISXzefRsfN","expires":1638611411706}
-```
-Use that token to send a request to ```/balance``` endpoint:
-- Endpoint: **/balance**
+---
+#### Check Account Balance 
+**Note**: You first need to create a session token to authenticate with the system. **The token will expire one minute after it was created** and you will need to create a new one if the current expires.
+
+Assume that the generated session token and its value is ```kkISXzefRsfN```,  send the following params to the ```/balance``` endpoint:
+- Endpoint: ```/balance```
 - method: **GET**
 - Expected Query Parameters ```accountNumber: Number|Long``` and ```token: String``` 
 
-##### Example using CURL Request for /balance
-```
+- Example Request
+```bash
 curl -X GET -G localhost:8080/balance -d accountNumber=123456789 -d token=hHZaMIzrxaQc # Assuming that token hasn't expired.
 ```
 
-##### Example Response from /balance
-```
+- Example Response
+```bash
 {"accountNumber":123456789,"accountBalance":800.0}
 ```
 ---
+#### Perform Withdraw Request
+**Note**: You first need to create a session token to authenticate with the system. **The token will expire one minute after it was created** and you will need to create a new one if the current expires.
+
+Assume that the generated session token and its value is ```kkISXzefRsfN``` and you want to withdraw 150 of value, send the following json body data to the ```/withdraw``` endpoint:
+- Endpoint: ```/withdraw```
+- method: **POST**
+- Expected Body ```accountNumber: Number|Long```, ```token: String``` and ```value: Number|Integer``` 
+
+```bash
+curl --header "Content-Type: application/json" \
+--request POST \
+--data '{"accountNumber":123456789,"token":"kkISXzefRsfN", "value": 235}' \
+http://localhost:8080/withdraw
+
+```
+- Expected Response:
+```bash
+{"accountNumber":123456789,"balance":565.0,"withdraw":{"fifties":4,"twenties":1,"tenners":1,"fivers":1,"total":235}}
+```
+
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
