@@ -29,9 +29,11 @@ public class Fivers extends CashDispenser{
 
             if(amount >= 5){
                 Integer count = amount / 5;
-                remainder = amount % 5;
-                // Update the perRequire
-                numberOfNotes = numberOfNotes - count;
+                // Amount that will in fact be dispensed.
+                Integer actualAmountToDispense = count > numberOfNotes ? numberOfNotes : count;
+
+                remainder = amount % 5 + (count - actualAmountToDispense) * 5;
+                numberOfNotes = numberOfNotes - actualAmountToDispense;
             }
 
             if(remainder > 0 && this.nextCashDispenser!= null){

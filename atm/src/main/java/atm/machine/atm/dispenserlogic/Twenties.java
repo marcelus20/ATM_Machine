@@ -29,9 +29,14 @@ public class Twenties extends CashDispenser{
 
             if(amount >= 20){
                 Integer count = amount / 20;
-                remainder = amount % 20;
-                numberOfNotes = numberOfNotes - count;
+                // Amount that will in fact be dispensed.
+                Integer actualAmountToDispense = count > numberOfNotes ? numberOfNotes : count;
+
+                remainder = amount % 20 + (count - actualAmountToDispense) * 20;
+                numberOfNotes = numberOfNotes - actualAmountToDispense;
             }
+
+
 
             if(remainder > 0 && this.nextCashDispenser!= null){
                 this.nextCashDispenser.dispense(new Cash(remainder));

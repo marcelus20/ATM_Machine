@@ -3,21 +3,40 @@ package atm.machine.atm.dispenserlogic;
 import atm.machine.atm.models.ATMStatus;
 
 public class ATMMachine {
-    protected static CashDispenser fifties = Fifties.getInstance();
-    protected static CashDispenser twenties = Twenties.getInstance();
-    protected static CashDispenser tenners = Tenners.getInstance();
-    protected static CashDispenser fivers = Fivers.getInstance();
-    protected static CashDispenser chain;
+
+    public static ATMMachine atmMachine;
+
+    public static ATMMachine getInstance(){
+        if(atmMachine == null){
+            atmMachine = new ATMMachine();
+        }
+        return atmMachine;
+    }
 
 
-    static{
+    private CashDispenser fifties;
+    private CashDispenser twenties;
+    private CashDispenser tenners;
+    protected CashDispenser fivers;
+    protected CashDispenser chain;
+
+
+    private ATMMachine(){
+        fifties = Fifties.getInstance();
+        twenties = Twenties.getInstance();
+        tenners = Tenners.getInstance();
+        fivers = Fivers.getInstance();
+        setDispensers();
+    }
+
+    private void setDispensers() {
         fifties.setNextCashDispenser(twenties);
         twenties.setNextCashDispenser(tenners);
         tenners.setNextCashDispenser(fivers);
         chain = fifties;
     }
 
-    public static void withdraw(Cash cash){
+    public void withdraw(Cash cash){
         if(cash != null){
             chain.dispense(cash);
         }
@@ -25,12 +44,12 @@ public class ATMMachine {
 
     // This method will return the ATMStatus model representation out of the data retrieved
     // from the dispensers attributes
-    public static ATMStatus serialise(){
+    public ATMStatus serialise(){
         return new ATMStatus(
-                fifties.numberOfNotes,
-                twenties.numberOfNotes,
-                tenners.numberOfNotes,
-                fivers.numberOfNotes
+                fifties.getNumberOfNotes(),
+                twenties.getNumberOfNotes(),
+                tenners.getNumberOfNotes(),
+                fivers.getNumberOfNotes()
         );
     }
 }

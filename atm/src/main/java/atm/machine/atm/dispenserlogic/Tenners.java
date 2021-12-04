@@ -28,8 +28,11 @@ public class Tenners extends CashDispenser{
 
             if(amount >= 10){
                 Integer count = amount / 10;
-                remainder = amount % 10;
-                numberOfNotes = numberOfNotes - count;
+                // Amount that will in fact be dispensed.
+                Integer actualAmountToDispense = count > numberOfNotes ? numberOfNotes : count;
+
+                remainder = amount % 10 + (count - actualAmountToDispense) * 10;
+                numberOfNotes = numberOfNotes - actualAmountToDispense;
             }
 
             if(remainder > 0 && this.nextCashDispenser!= null){

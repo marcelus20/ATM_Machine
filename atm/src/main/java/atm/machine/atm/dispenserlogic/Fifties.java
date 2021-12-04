@@ -33,8 +33,11 @@ public class Fifties extends CashDispenser{
 
             if(amount >= 50){
                 Integer count = amount / 50;
-                remainder = amount % 50;
-                numberOfNotes = numberOfNotes - count;
+                // Amount that will in fact be dispensed.
+                Integer actualAmountToDispense = count > numberOfNotes ? numberOfNotes : count;
+
+                remainder = amount % 50 + (count - actualAmountToDispense) * 50;
+                numberOfNotes = numberOfNotes - actualAmountToDispense;
             }
 
             if(remainder > 0 && this.nextCashDispenser!= null){

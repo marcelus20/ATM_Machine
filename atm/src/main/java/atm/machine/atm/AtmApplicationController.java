@@ -26,10 +26,12 @@ public class AtmApplicationController {
 
 	private final AccountSet accounts;
 	private HashSet<Session> sessions;
+	private ATMMachine atmMachine;
 
 	AtmApplicationController(){
 		this.accounts = new AccountSet();
 		this.sessions = new HashSet<Session>();
+		this.atmMachine = ATMMachine.getInstance();
 
 		// Adding the first account to the set: (I'm hardcoding as per assignment)
 		accounts.add(new Account(123456789L, "1234", 800, 200));
@@ -141,6 +143,6 @@ public class AtmApplicationController {
 	 */
 	@RequestMapping("/status")
 	public ATMStatus status(){
-		return ATMMachine.serialise();
+		return this.atmMachine.serialise();
 	}
 }

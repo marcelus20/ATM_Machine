@@ -4,7 +4,7 @@ public abstract class CashDispenser {
 
     protected  CashDispenser nextCashDispenser;
     /**
-     * The number of notes per assigments.
+     * The number of notes per assignments.
      *  Fifties will be initiated with 10
      *  Twenties will be Initiated with 30
      *  Tenners will be initiated with x 30
@@ -26,4 +26,8 @@ public abstract class CashDispenser {
     }
 
     public abstract void dispense(Cash cash);
+
+    public Integer getNumberOfNotes() {
+        return numberOfNotes;
+    }
 }

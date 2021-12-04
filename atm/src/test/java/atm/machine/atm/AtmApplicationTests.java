@@ -1,16 +1,14 @@
 package atm.machine.atm;
 
 
+import atm.machine.atm.dispenserlogic.*;
 import atm.machine.atm.models.Account;
-import atm.machine.atm.models.AccountBalance;
 import atm.machine.atm.models.Session;
 import atm.machine.atm.tablesets.AccountSet;
 import atm.machine.atm.tablesets.SessionSet;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-
-import java.util.HashSet;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -107,6 +105,44 @@ class AtmApplicationTests {
 	@Test public void sessionExtendedTokenShouldReturnNullIfSessionIsExpired(){
 		Session original = new Session(123456789L,"abc",0L);
 		assertThat(original.extendToken()).isNull();
+	}
+
+	@Test public void chainShouldNotDispenseMoreThanTheAvailableBankNotesForEachDispenser(){
+		Fifties fifties = Fifties.getInstance(); // 10 bank notes
+		Twenties twenties = Twenties.getInstance(); // 30 bank notes
+		Tenners tenners = Tenners.getInstance(); //30 bank notes
+		Fivers fivers = Fivers.getInstance(); //20 bank notes
+
+		fifties.setNextCashDispenser(twenties);
+		twenties.setNextCashDispenser(tenners);
+		tenners.setNextCashDispenser(fivers);
+
+		fifties.dispense(new Cash(550));
+		assertThat(fifties.getNumberOfNotes()).isEqualTo(0); // From 2 notes, it went to 0
+		assertThat(twenties.getNumberOfNotes()).isEqualTo(28); // From 30 notes it went to 28
+		assertThat(tenners.getNumberOfNotes()).isEqualTo(29);
+
+		// At this point, fifties should be 0, twenties 28 and tenners 29.
+		//Simulate one withdraw of 570
+		fifties.dispense(new Cash(570));
+		assertThat(fifties.getNumberOfNotes()).isEqualTo(0); // Fifties should remain 0
+		assertThat(twenties.getNumberOfNotes()).isEqualTo(0); // twenties should drop from 28 to 0
+		assertThat(tenners.getNumberOfNotes()).isEqualTo(28); // tenners should drop from 30 to 28
+
+		// At this point, fifties should be 0, twenties 0 and tenners 28.
+		//Simulate one withdraw of 305
+		fifties.dispense(new Cash(305));
+		assertThat(fifties.getNumberOfNotes()).isEqualTo(0); // Fifties should remain 0
+		assertThat(twenties.getNumberOfNotes()).isEqualTo(0); // twenties remains 0
+		assertThat(tenners.getNumberOfNotes()).isEqualTo(0); // tenners should drop from 28 to 0
+		assertThat(fivers.getNumberOfNotes()).isEqualTo(15); // fivers should drop from 20 to 15
+
+		// At this point, fifties should be 0, twenties should be 0, tenners 0 and fivers 15
+		fifties.dispense(new Cash(100));
+		assertThat(fifties.getNumberOfNotes()).isEqualTo(0); // Fifties should remain 0
+		assertThat(twenties.getNumberOfNotes()).isEqualTo(0); // twenties remains 0
+		assertThat(tenners.getNumberOfNotes()).isEqualTo(0); // tenners remains 0
+		assertThat(fivers.getNumberOfNotes()).isEqualTo(0); // fivers drop to 0 even if the value is larger
 	}
 
 
