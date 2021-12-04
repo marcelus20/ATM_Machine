@@ -1,11 +1,9 @@
 package atm.machine.atm;
 
 import atm.machine.atm.dispenserlogic.ATMMachine;
-import atm.machine.atm.models.ATMStatus;
-import atm.machine.atm.models.Account;
-import atm.machine.atm.models.AccountBalance;
-import atm.machine.atm.models.Session;
-import atm.machine.atm.tablesets.AccountSet;
+import atm.machine.atm.dispenserlogic.Cash;
+import atm.machine.atm.models.*;
+import atm.machine.atm.tablesets.AccountMap;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.HttpStatus;
@@ -24,25 +22,24 @@ import java.util.stream.Collectors;
 public class AtmApplicationController {
 
 
-	private final AccountSet accounts;
+	private final AccountMap accounts;
 	private HashSet<Session> sessions;
 	private ATMMachine atmMachine;
 
 	AtmApplicationController(){
-		this.accounts = new AccountSet();
+		this.accounts = new AccountMap();
 		this.sessions = new HashSet<Session>();
 		this.atmMachine = ATMMachine.getInstance();
 
 		// Adding the first account to the set: (I'm hardcoding as per assignment)
-		accounts.add(new Account(123456789L, "1234", 800, 200));
+		accounts.write(new Account(123456789L, "1234", 800, 200));
 		// Adding the second account:
-		accounts.add(new Account(987654321L, "4321", 1230, 150));
+		accounts.write(new Account(987654321L, "4321", 1230, 150));
 	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(AtmApplicationController.class, args);
 	}
-
 
 
 
@@ -59,24 +56,17 @@ public class AtmApplicationController {
 		String pin = (String) body.get("pin");
 
 		// Look account with matching accountId and password
-		boolean contains = this.accounts.contains(new Account(accountNumber, pin));
-		if(contains){
-			// Query the account with matching accountNumber
-			Account account = accounts.retrieveOneOrNull(new Account(accountNumber));
-			if(account != null && account.getPin().equals(pin)){
-				// Create a new session object
-				Session session = new Session(accountNumber);
-				// Add to the session set
-				this.sessions.add(session);
+		Account account = this.accounts.retrieveOneOrNull(new Account(accountNumber, pin));
+		if(account != null && account.getPin().equals(pin)){
+			// Create a new session object
+			Session session = new Session(accountNumber);
+			// Add to the session set
+			this.sessions.add(session);
 
-				// Return the serialised version of session
-				return session;
-			}else{
-				// PIN is incorrect
-				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "PIN is incorrect");
-			}
-
+			// Return the serialised version of session
+			return session;
 		}else{
+			// Pin is incorrect
 			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Account ID or PIN is incorrect");
 		}
 
@@ -110,32 +100,78 @@ public class AtmApplicationController {
 	}
 
 	@GetMapping("/balance")
-	public AccountBalance balance(@RequestParam("accountNumber") Long accountNumber, @RequestParam("token") String token){
+	public AccountBalance balance(
+			@RequestParam("accountNumber") Long accountNumber,
+			@RequestParam("token") String token
+	){
 
 		Session validSession = sessionVerifierHelper(accountNumber, token);
 
 		// If the sentence above doesn't throw, it means that we are good to proceed
 		// Token is valid, and thus, balance can be shown.
 		// Retrieve the account from the this.accounts
-		List<Account> filteredAccounts = this.accounts.stream().filter(acc->acc.getAccountNumber().equals(accountNumber)).collect(Collectors.toList());
+		//List<Account> filteredAccounts = this.accounts.stream().filter(acc->acc.getAccountNumber().equals(accountNumber)).collect(Collectors.toList());
+
+		Account account = this.accounts.retrieveOneOrNull(new Account(accountNumber));
 
 		// filteredAccounts is expected to have size of 1, but if its size is 0 for any reason, let's throw a 500
-		if(filteredAccounts.size() == 1){
-			Account account = filteredAccounts.get(0);
+		if(account != null){
 			// Generate the AccountBalance object from the account
-			return new AccountBalance(account.getAccountNumber(), account.getBalance());
+			return new AccountBalance(account.getAccountNumber(), account.getBalance(), account.calculateMaximumWithdrawAmount());
 		}else {
 			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
 
-	/*
-	@RequestMapping("/withdraw")
-	public String accountDemo(@RequestParam(value = "value") Integer value){
-		ATMMachine.withdraw(new Cash(value));
-		return "withdrew";
+
+	@PostMapping("/withdraw")
+	public PostWithdrawAccount accountDemo(@RequestBody() Map<String, Object> body){
+
+		Long accountNumber = Long.valueOf(String.valueOf(body.get("accountNumber")));
+		String token = (String) body.get("token");
+		Integer value = (Integer) body.get("value");
+
+		Session session = sessionVerifierHelper(accountNumber, token);
+		Account account = this.accounts.retrieveOneOrNull(new Account(accountNumber));
+		if(account !=null){
+			Double maximumWithdrawAmount = account.calculateMaximumWithdrawAmount();
+			if(value < maximumWithdrawAmount){
+				if(value % 50 == 0 || value % 20 == 0 || value % 10 == 0 || value % 5 == 0){
+					// value is multiple of 50 or 20 or 10 or 5, go ahead.
+					if(value < this.atmMachine.serialise().getTotal()){
+						// If value less is more than the total that the ATM contains in cash
+						//Perform withdraw
+						this.atmMachine.withdraw(new Cash(value));
+						//Update Account
+						Account updatedAccount = account.withBalance(account.getBalance() - value);
+						// Save updatedAccount in the accounts table
+						accounts.write(updatedAccount);
+						PostWithdrawAccount postWithdrawAccount = new PostWithdrawAccount(
+								updatedAccount.getAccountNumber(),
+								updatedAccount.getBalance(),
+								this.atmMachine.getWithdraw()
+						);
+						// Reset the ATM withdraw to default
+						this.atmMachine.setWithdraw(new Withdraw());
+						return postWithdrawAccount;
+					}else{
+						// ATM doesn't have enough notes to fulfill withdraw request
+						throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+					}
+				}else{
+					// Not a valid multiple
+					throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+				}
+			}else{
+				// No enough cash!
+				throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+			}
+		}else{
+			// Something went wrong! :/
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 	}
-*/
+
 	/**
 	 * Endpoint to retrieve the status of the ATM Machine
 	 * It will display how many of each notes there are left and the total amount.

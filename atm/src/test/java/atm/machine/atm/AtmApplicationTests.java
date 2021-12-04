@@ -4,8 +4,8 @@ package atm.machine.atm;
 import atm.machine.atm.dispenserlogic.*;
 import atm.machine.atm.models.Account;
 import atm.machine.atm.models.Session;
-import atm.machine.atm.tablesets.AccountSet;
-import atm.machine.atm.tablesets.SessionSet;
+import atm.machine.atm.tablesets.AccountMap;
+import atm.machine.atm.tablesets.SessionMap;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -24,77 +24,54 @@ class AtmApplicationTests {
 		assertThat(controller).isNotNull();
 	}
 
-	@Test public void sessionSetShouldContainAnotherSessionWithSameToken(){
-		SessionSet sessions = new SessionSet();
-		Session session1 = new Session("abc");
-		sessions.add(session1);
-		Session session2 = new Session("abc");
-		assertThat(sessions.contains(session2)).isTrue();
-	}
-
-	@Test public void accountSetShouldContainAnotherAccountWithSameAccountNumberEvenWithDifferentPINs(){
-		AccountSet accounts = new AccountSet();
+	@Test public void accountMapShouldKeepTheMostUpToDateValueOfAccount(){
+		AccountMap accounts = new AccountMap();
 		Account account1 = new Account(123456789L,"1234");
-		accounts.add(account1);
-		Account account2 = new Account(123456789L, "12345");
-		assertThat(accounts.contains(account2)).isTrue();
+		accounts.write(account1);
+		Account account2 = new Account(123456789L, "12345"); // Second entry
+		accounts.put(123456789L, account2);
+		assertThat(accounts.get(123456789L).getPin()).isEqualTo("12345");
 	}
 
-	@Test public void accountSetShouldContainAnotherAccountWithSameAccountNumberWithSamePINs(){
-		AccountSet accounts = new AccountSet();
+	@Test public void accountMapSizeShouldNotChangeIfANewEntryIsAddedWithTheSameAccountId(){
+		AccountMap accounts = new AccountMap();
 		Account account1 = new Account(123456789L,"1234");
-		accounts.add(account1);
-		Account account2 = new Account(123456789L, "1234");
-		assertThat(accounts.contains(account2)).isTrue();
+		accounts.write(account1);
+		Account account2 = new Account(123456789L, "12345"); // Second entry
+		accounts.put(123456789L, account2);
+		assertThat(accounts.size()).isEqualTo(1);
 	}
 
-	@Test public void accountSetShouldNotContainAnotherAccountWithDifferentAccountNumbersEvenIfPINsMatches(){
-		AccountSet accounts = new AccountSet();
+	@Test public void accountMapRetrieveOrNullShouldReturnNullIfAccountNumberDoesntExist(){
+		AccountMap accounts = new AccountMap();
 		Account account1 = new Account(123456789L,"1234");
-		accounts.add(account1);
-		Account account2 = new Account(12345678L, "1234");
-		assertThat(accounts.contains(account2)).isFalse();
+		assertThat(accounts.retrieveOneOrNull(new Account(12345L))).isNull();
 	}
 
-	@Test public void accountSetShouldNotContainAnotherAccountWithDifferentAccountNumbersEvenIfPINsAreDifferent(){
-		AccountSet accounts = new AccountSet();
-		Account account1 = new Account(123456789L,"1234");
-		accounts.add(account1);
-		Account account2 = new Account(12345678L, "12345");
-		assertThat(accounts.contains(account2)).isFalse();
+	@Test public void sessionMapShouldKeepTheMostUpToDateValueOfSession(){
+		SessionMap sessions = new SessionMap();
+		Session session1 = new Session(123456789L, "abc");
+		sessions.write(session1);
+		Session session2 = new Session(123456789L, "abc", 10L); // Second entry
+		sessions.put("abc", session2);
+		assertThat(sessions.get("abc").getExpires()).isEqualTo(10L);
 	}
 
-	@Test public void accountSetShouldReturnTheAccountIfAccountIdIsFoundInSet(){
-		AccountSet accounts = new AccountSet();
-		Account account1 = new Account(123456789L,"1234");
-		accounts.add(account1);
-		Account account2 = new Account(123456789L, "12345");
-		assertThat(accounts.retrieveOneOrNull(account2).equals(account1)).isTrue();
+	@Test public void sessionMapSizeShouldNotChangeIfANewEntryIsAddedWithTheSameSessionToken(){
+		SessionMap sessions = new SessionMap();
+		Session session1 = new Session(123456789L, "abc");
+		sessions.write(session1);
+		Session session2 = new Session(123456789L, "abc", 10L); // Second entry
+		sessions.put("abc", session2);
+		assertThat(sessions.size()).isEqualTo(1);
 	}
 
-	@Test public void accountSetShouldReturnNullIfAccountIdIsNotFoundInSet(){
-		AccountSet accounts = new AccountSet();
-		Account account1 = new Account(123456789L,"1234");
-		accounts.add(account1);
-		Account account2 = new Account(12345678L, "12345");
-		assertThat(accounts.retrieveOneOrNull(account2)).isNull();
+	@Test public void sessionMapRetrieveOrNullShouldReturnNullIfSessionTokenDoesntExist(){
+		SessionMap sessions = new SessionMap();
+		Session session1 = new Session(123456789L, "abc");
+		assertThat(sessions.retrieveOneOrNull(new Session("abcd"))).isNull();
 	}
 
-	@Test public void sessionSetShouldReturnTheSessionIfTokenIsFoundInSet(){
-		SessionSet sessions = new SessionSet();
-		Session session1 = new Session("abc");
-		sessions.add(session1);
-		Session session2 = new Session("abc");
-		assertThat(sessions.retrieveOneOrNull(session2).equals(session1)).isTrue();
-	}
-
-	@Test public void sessionSetShouldReturnNullIfTokenIsNotFoundInSet(){
-		SessionSet sessions = new SessionSet();
-		Session session1 = new Session("abc");
-		sessions.add(session1);
-		Session session2 = new Session("ab");
-		assertThat(sessions.retrieveOneOrNull(session2)).isNull();
-	}
 
 	@Test public void sessionExtendedTokenExpiresShouldBeGreaterThanCurrentTimeRegardlessOfOriginalExpires(){
 		Session original = new Session("abc");
@@ -145,5 +122,15 @@ class AtmApplicationTests {
 		assertThat(fivers.getNumberOfNotes()).isEqualTo(0); // fivers drop to 0 even if the value is larger
 	}
 
+	@Test public void accountSetShouldUpdateToNewObjectPassedAsParameter(){
+		AccountMap accounts = new AccountMap();
+		Account account1 = new Account(111111L, "1234", 100, 100);
+		accounts.write(account1);
+		Account updatedAccount1 = account1.withBalance(200);
+		accounts.write(updatedAccount1);
+
+		assertThat(accounts.retrieveOneOrNull(new Account(111111L)).getBalance()).isEqualTo(200);
+
+	}
 
 }

@@ -11,6 +11,7 @@ public abstract class CashDispenser {
      *  Fivers will be initiated with x 20
      */
     protected Integer numberOfNotes;
+    protected ATMMachine atmMachine;
 
     /**
      * Chain of responsibility Design Pattern. Set the next dispenser

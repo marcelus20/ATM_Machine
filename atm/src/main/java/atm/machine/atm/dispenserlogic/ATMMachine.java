@@ -1,10 +1,12 @@
 package atm.machine.atm.dispenserlogic;
 
 import atm.machine.atm.models.ATMStatus;
+import atm.machine.atm.models.Withdraw;
 
 public class ATMMachine {
 
     public static ATMMachine atmMachine;
+    private Withdraw withdraw;
 
     public static ATMMachine getInstance(){
         if(atmMachine == null){
@@ -22,10 +24,11 @@ public class ATMMachine {
 
 
     private ATMMachine(){
-        fifties = Fifties.getInstance();
-        twenties = Twenties.getInstance();
-        tenners = Tenners.getInstance();
-        fivers = Fivers.getInstance();
+        withdraw = new Withdraw();
+        fifties = Fifties.getInstance(this);
+        twenties = Twenties.getInstance(this);
+        tenners = Tenners.getInstance(this);
+        fivers = Fivers.getInstance(this);
         setDispensers();
     }
 
@@ -46,10 +49,18 @@ public class ATMMachine {
     // from the dispensers attributes
     public ATMStatus serialise(){
         return new ATMStatus(
-                fifties.getNumberOfNotes(),
-                twenties.getNumberOfNotes(),
-                tenners.getNumberOfNotes(),
-                fivers.getNumberOfNotes()
+            fifties.getNumberOfNotes(),
+            twenties.getNumberOfNotes(),
+            tenners.getNumberOfNotes(),
+            fivers.getNumberOfNotes()
         );
+    }
+
+    public Withdraw getWithdraw() {
+        return this.withdraw;
+    }
+
+    public void setWithdraw(Withdraw withdraw) {
+        this.withdraw = withdraw;
     }
 }

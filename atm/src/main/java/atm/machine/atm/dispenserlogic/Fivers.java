@@ -9,16 +9,21 @@ public class Fivers extends CashDispenser{
      */
     public static Fivers fivers;
 
-    public static Fivers getInstance(){
+    public static Fivers getInstance(ATMMachine atmMachine){
         if(fivers == null){
-            fivers = new Fivers();
+            fivers = new Fivers(atmMachine);
         }
         return fivers;
     }
 
-    private Fivers() {
+    public static Fivers getInstance(){
+        return getInstance(null);
+    }
+
+    private Fivers(ATMMachine atmMachine) {
         // There will be only 20 fivers in this ATM Machine.
         this.numberOfNotes = 20;
+        this.atmMachine = atmMachine;
     }
 
     @Override
@@ -31,6 +36,10 @@ public class Fivers extends CashDispenser{
                 Integer count = amount / 5;
                 // Amount that will in fact be dispensed.
                 Integer actualAmountToDispense = count > numberOfNotes ? numberOfNotes : count;
+
+                this.atmMachine.setWithdraw(
+                        this.atmMachine.getWithdraw().withFivers(actualAmountToDispense)
+                );
 
                 remainder = amount % 5 + (count - actualAmountToDispense) * 5;
                 numberOfNotes = numberOfNotes - actualAmountToDispense;

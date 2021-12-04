@@ -11,4 +11,6 @@ package atm.machine.atm.tablesets;
  */
 public interface Queryable<T> {
     public T retrieveOneOrNull(T object);
+
+    void write(T object);
 }

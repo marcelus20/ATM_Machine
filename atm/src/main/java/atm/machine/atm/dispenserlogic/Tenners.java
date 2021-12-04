@@ -8,16 +8,21 @@ public class Tenners extends CashDispenser{
      * to guarantee instantiation of 1 Tenners
      */
     private static Tenners tenners;
-    public static Tenners getInstance(){
+    public static Tenners getInstance(ATMMachine atmMachine){
         if(tenners == null){
-            tenners = new Tenners();
+            tenners = new Tenners(atmMachine);
         }
         return tenners;
     }
 
-    private Tenners() {
+    public static Tenners getInstance(){
+        return getInstance(null);
+    }
+
+    private Tenners(ATMMachine atmMachine) {
         // There will be only 30 tenners in this ATM.
         this.numberOfNotes = 30;
+        this.atmMachine = atmMachine;
     }
 
     @Override
@@ -30,6 +35,10 @@ public class Tenners extends CashDispenser{
                 Integer count = amount / 10;
                 // Amount that will in fact be dispensed.
                 Integer actualAmountToDispense = count > numberOfNotes ? numberOfNotes : count;
+
+                this.atmMachine.setWithdraw(
+                        this.atmMachine.getWithdraw().withTenners(actualAmountToDispense)
+                );
 
                 remainder = amount % 10 + (count - actualAmountToDispense) * 10;
                 numberOfNotes = numberOfNotes - actualAmountToDispense;

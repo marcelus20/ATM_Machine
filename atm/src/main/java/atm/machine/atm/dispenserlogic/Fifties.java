@@ -10,19 +10,24 @@ public class Fifties extends CashDispenser{
      */
     private static Fifties fifties;
 
-    public static Fifties getInstance(){
+    public static Fifties getInstance(ATMMachine atmMachine){
         if(fifties == null){
-            fifties = new Fifties();
+            fifties = new Fifties(atmMachine);
         }
         return fifties;
+    }
+
+    public static Fifties getInstance(){
+        return getInstance(null);
     }
 
     /**
      * Constructor, initialise number of notes to 10
      */
-    private Fifties(){
+    private Fifties(ATMMachine atmMachine){
         // The assignment states that there will be 10 fifties.
         this.numberOfNotes = 10;
+        this.atmMachine = atmMachine;
     }
 
     @Override
@@ -35,6 +40,10 @@ public class Fifties extends CashDispenser{
                 Integer count = amount / 50;
                 // Amount that will in fact be dispensed.
                 Integer actualAmountToDispense = count > numberOfNotes ? numberOfNotes : count;
+
+                this.atmMachine.setWithdraw(
+                        this.atmMachine.getWithdraw().withFifties(actualAmountToDispense)
+                );
 
                 remainder = amount % 50 + (count - actualAmountToDispense) * 50;
                 numberOfNotes = numberOfNotes - actualAmountToDispense;

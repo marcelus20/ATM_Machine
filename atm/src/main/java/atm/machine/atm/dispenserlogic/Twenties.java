@@ -9,16 +9,21 @@ public class Twenties extends CashDispenser{
      */
     private static Twenties twenties;
 
-    public static Twenties getInstance(){
+    public static Twenties getInstance(ATMMachine atmMachine){
         if(twenties == null){
-            twenties = new Twenties();
+            twenties = new Twenties(atmMachine);
         }
         return twenties;
     }
 
-    private Twenties() {
+    public static Twenties getInstance(){
+        return getInstance(null);
+    }
+
+    private Twenties(ATMMachine atmMachine) {
         // Per Assignment requirement, there will be only 30 twenties
         this.numberOfNotes = 30;
+        this.atmMachine = atmMachine;
     }
 
     @Override
@@ -31,6 +36,10 @@ public class Twenties extends CashDispenser{
                 Integer count = amount / 20;
                 // Amount that will in fact be dispensed.
                 Integer actualAmountToDispense = count > numberOfNotes ? numberOfNotes : count;
+
+                this.atmMachine.setWithdraw(
+                        this.atmMachine.getWithdraw().withTwenties(actualAmountToDispense)
+                );
 
                 remainder = amount % 20 + (count - actualAmountToDispense) * 20;
                 numberOfNotes = numberOfNotes - actualAmountToDispense;

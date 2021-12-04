@@ -33,6 +33,12 @@ public class Session {
         this.expires = expires;
     }
 
+    public Session(Long accountId, String token) {
+        this.accountId = accountId;
+        this.token = token;
+        this.expires = expires;
+    }
+
     public Session(String token) {
         this.token = token;
         this.accountId = 0L;

@@ -50,6 +50,10 @@ public class Account {
         this.overdraft = 0.0;
     }
 
+    public Double calculateMaximumWithdrawAmount(){
+        return this.balance + this.overdraft;
+    }
+
     public Long getAccountNumber() {
         return accountNumber;
     }
@@ -80,5 +84,13 @@ public class Account {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37).append(accountNumber).toHashCode();
+    }
+
+    public Account withBalance(Integer balance) {
+        return new Account(accountNumber, pin, Double.valueOf(balance), overdraft);
+    }
+
+    public Account withBalance(Double balance) {
+        return new Account(accountNumber, pin, balance, overdraft);
     }
 }
