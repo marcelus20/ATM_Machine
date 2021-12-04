@@ -1,4 +1,4 @@
-package atm.machine.atm.logic;
+package atm.machine.atm.dispenserlogic;
 
 import atm.machine.atm.models.ATMStatus;
 
