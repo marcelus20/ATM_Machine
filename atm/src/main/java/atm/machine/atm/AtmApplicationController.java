@@ -2,19 +2,17 @@ package atm.machine.atm;
 
 import atm.machine.atm.dispenserlogic.ATMMachine;
 import atm.machine.atm.dispenserlogic.Cash;
+import atm.machine.atm.exeptions.*;
 import atm.machine.atm.models.*;
 import atm.machine.atm.tablesets.AccountMap;
+import atm.machine.atm.tablesets.SessionMap;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 @SpringBootApplication
@@ -23,12 +21,12 @@ public class AtmApplicationController {
 
 
 	private final AccountMap accounts;
-	private HashSet<Session> sessions;
+	private SessionMap sessions;
 	private ATMMachine atmMachine;
 
 	AtmApplicationController(){
 		this.accounts = new AccountMap();
-		this.sessions = new HashSet<Session>();
+		this.sessions = new SessionMap();
 		this.atmMachine = ATMMachine.getInstance();
 
 		// Adding the first account to the set: (I'm hardcoding as per assignment)
@@ -50,52 +48,44 @@ public class AtmApplicationController {
 	 *
 	 */
 	@PostMapping("/session")
-	public Session session(@RequestBody Map<String, Object> body){
+	public Session session(@RequestBody Map<String, Object> body) throws NonExistentAccountError, InvalidPinError {
 
 		Long accountNumber = Long.valueOf(String.valueOf(body.get("accountNumber")));
 		String pin = (String) body.get("pin");
 
 		// Look account with matching accountId and password
 		Account account = this.accounts.retrieveOneOrNull(new Account(accountNumber, pin));
-		if(account != null && account.getPin().equals(pin)){
-			// Create a new session object
-			Session session = new Session(accountNumber);
-			// Add to the session set
-			this.sessions.add(session);
+		if(account != null){
+			if(account.getPin().equals(pin)){
+				// Create a new session object
+				Session session = new Session(accountNumber);
+				// Add to the session set
+				this.sessions.write(session);
 
-			// Return the serialised version of session
-			return session;
+				// Return the serialised version of session
+				return session;
+			}else{
+				throw new InvalidPinError();
+			}
 		}else{
-			// Pin is incorrect
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Account ID or PIN is incorrect");
+			// Account Doesn't Exist
+			throw new NonExistentAccountError();
 		}
 
 	}
 
-	private Session sessionVerifierHelper(Long accountNumber, String token){
+	private Session sessionVerifierHelper(Long accountNumber, String token) throws InvalidTokenError, ExpiredTokenError {
 		// First check if a session can be found in this.sessions with that token
-		final boolean contains = this.sessions.contains(new Session(token));
+		Session session = this.sessions.retrieveOneOrNull(new Session(token));
 
-		if(contains){
-			// Retrieve the session object and verify if the accountNumber matches the session.accountNumber
-			List<Session> sessionList= new ArrayList<Session>(this.sessions);
-			List<Session> resultingList = sessionList.stream().filter(session->session.getToken().equals(token)).collect(Collectors.toList());
-
-			// It's expected the resulting list to be of size 1 only.
-			if(resultingList.size() == 1){
-				// Retrieve the session object from the resultingList
-				Session session = resultingList.get(0);
-
-				if(!session.hasExpired()){
-					return session;
-				}else{
-					throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Session Expired.");
-				}
+		if(session != null && accountNumber.equals(session.getAccountNumber())){
+			if(!session.hasExpired()){
+				return session;
 			}else{
-				throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid Session");
+				throw new ExpiredTokenError();
 			}
 		}else{
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invalid Session");
+			throw new InvalidTokenError();
 		}
 	}
 
@@ -103,15 +93,11 @@ public class AtmApplicationController {
 	public AccountBalance balance(
 			@RequestParam("accountNumber") Long accountNumber,
 			@RequestParam("token") String token
-	){
-
+	) throws InvalidTokenError, ExpiredTokenError {
 		Session validSession = sessionVerifierHelper(accountNumber, token);
 
 		// If the sentence above doesn't throw, it means that we are good to proceed
 		// Token is valid, and thus, balance can be shown.
-		// Retrieve the account from the this.accounts
-		//List<Account> filteredAccounts = this.accounts.stream().filter(acc->acc.getAccountNumber().equals(accountNumber)).collect(Collectors.toList());
-
 		Account account = this.accounts.retrieveOneOrNull(new Account(accountNumber));
 
 		// filteredAccounts is expected to have size of 1, but if its size is 0 for any reason, let's throw a 500
@@ -125,7 +111,14 @@ public class AtmApplicationController {
 
 
 	@PostMapping("/withdraw")
-	public PostWithdrawAccount accountDemo(@RequestBody() Map<String, Object> body){
+	public PostWithdrawAccount accountDemo(@RequestBody() Map<String, Object> body)
+			throws
+			NoEnoughCashError,
+			ValueWithInvalidMultipleError,
+			ATMOutOfBankNotesError,
+			InvalidTokenError,
+			ExpiredTokenError
+	{
 
 		Long accountNumber = Long.valueOf(String.valueOf(body.get("accountNumber")));
 		String token = (String) body.get("token");
@@ -156,21 +149,23 @@ public class AtmApplicationController {
 						return postWithdrawAccount;
 					}else{
 						// ATM doesn't have enough notes to fulfill withdraw request
-						throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+						throw new ATMOutOfBankNotesError();
 					}
 				}else{
 					// Not a valid multiple
-					throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+					throw new ValueWithInvalidMultipleError();
 				}
 			}else{
 				// No enough cash!
-				throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+				throw new NoEnoughCashError();
 			}
 		}else{
 			// Something went wrong! :/
 			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
+
+
 
 	/**
 	 * Endpoint to retrieve the status of the ATM Machine

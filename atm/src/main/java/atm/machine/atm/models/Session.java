@@ -5,12 +5,12 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class Session {
-    private Long accountId;
+    private Long accountNumber;
     private String token;
     private Long expires;
 
     public Session(Long accountId) {
-        this.accountId = accountId;
+        this.accountNumber = accountId;
         this.token = RandomStringUtils.randomAlphabetic(12);
 
         // Set the expiration to (now + 1 minute)
@@ -22,35 +22,35 @@ public class Session {
     }
 
     public Session(Long accountId, String token, Long expires) {
-        this.accountId = accountId;
+        this.accountNumber = accountId;
         this.token = token;
         this.expires = expires;
     }
 
     public Session(Long accountId, Long expires) {
-        this.accountId = accountId;
+        this.accountNumber = accountId;
         this.token = RandomStringUtils.randomAlphabetic(12);
         this.expires = expires;
     }
 
     public Session(Long accountId, String token) {
-        this.accountId = accountId;
+        this.accountNumber = accountId;
         this.token = token;
         this.expires = expires;
     }
 
     public Session(String token) {
         this.token = token;
-        this.accountId = 0L;
+        this.accountNumber = 0L;
         this.expires = System.currentTimeMillis() + 1000 * 60;
     }
 
-    public Long getAccountId() {
-        return accountId;
+    public Long getAccountNumber() {
+        return accountNumber;
     }
 
-    public void setAccountId(Long accountId) {
-        this.accountId = accountId;
+    public void setAccountNumber(Long accountNumber) {
+        this.accountNumber = accountNumber;
     }
 
     public String getToken() {
@@ -91,7 +91,7 @@ public class Session {
 
     public Session extendToken() {
         if(!this.hasExpired()){
-            return new Session(this.accountId, this.token, System.currentTimeMillis() + 30 * 1000);
+            return new Session(this.accountNumber, this.token, System.currentTimeMillis() + 30 * 1000);
         }else {
             return null;
         }
