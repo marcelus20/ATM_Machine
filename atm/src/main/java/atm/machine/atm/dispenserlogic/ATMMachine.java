@@ -5,6 +5,9 @@ import atm.machine.atm.models.Withdraw;
 
 public class ATMMachine {
 
+    /**
+     * Make it a singleton since there will be only one ATM machine in the system.
+     */
     public static ATMMachine atmMachine;
     private Withdraw withdraw;
 
@@ -29,10 +32,13 @@ public class ATMMachine {
         twenties = Twenties.getInstance(this);
         tenners = Tenners.getInstance(this);
         fivers = Fivers.getInstance(this);
-        setDispensers();
+        assignChainedDispensers();
     }
 
-    private void setDispensers() {
+    /**
+     * Helper method to link the dispensers in chains. Starting from fifties and ending on fivers.
+     */
+    private void assignChainedDispensers() {
         fifties.setNextCashDispenser(twenties);
         twenties.setNextCashDispenser(tenners);
         tenners.setNextCashDispenser(fivers);

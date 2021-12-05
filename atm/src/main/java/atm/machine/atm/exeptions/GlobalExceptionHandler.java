@@ -17,11 +17,11 @@ public class GlobalExceptionHandler {
     ){
 
         if(request.getDescription(false).contains("/balance")){
-            return new ResponseEntity<String>("accountNumber and token parameters are required! accountNumber must be a Number, Int or Long, whereas token must be a String.", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<String>("accountNumber parameter is required! accountNumber must be a Number, Int or Long.", HttpStatus.BAD_REQUEST);
         }else if(request.getDescription(false).contains("/session")){
             return new ResponseEntity<String>("accountNumber and pin parameters are required! accountNumber must be a Number Int or Long, whereas pin must be a String.", HttpStatus.BAD_REQUEST);
         }else if(request.getDescription(false).contains("/withdraw")){
-            return new ResponseEntity<String>("accountNumber, token and value parameters are required! accountNumber must be a Number Int or Long, whereas token must be a String and value an Integer.", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<String>("accountNumber, and value parameters are required! accountNumber must be a Number Int or Long, whereas token must be a String and value an Integer.", HttpStatus.BAD_REQUEST);
         }else{
             return new ResponseEntity<String>("Missing Parameters", HttpStatus.BAD_REQUEST);
         }

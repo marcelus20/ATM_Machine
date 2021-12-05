@@ -92,7 +92,7 @@ public class AtmApplicationController {
 	@GetMapping("/balance")
 	public AccountBalance balance(
 			@RequestParam("accountNumber") Long accountNumber,
-			@RequestParam("token") String token
+			@RequestHeader("x-auth-token") String token
 	) throws InvalidTokenError, ExpiredTokenError {
 		Session validSession = sessionVerifierHelper(accountNumber, token);
 
@@ -109,19 +109,20 @@ public class AtmApplicationController {
 		}
 	}
 
-
+	// @TODO if I have time, break down this function into chain of responsibility steps.
 	@PostMapping("/withdraw")
-	public PostWithdrawAccount accountDemo(@RequestBody() Map<String, Object> body)
-			throws
-			NoEnoughCashError,
-			ValueWithInvalidMultipleError,
-			ATMOutOfBankNotesError,
-			InvalidTokenError,
-			ExpiredTokenError
+	public PostWithdrawAccount accountDemo(
+			@RequestBody() Map<String, Object> body,
+			@RequestHeader("x-auth-token") String token
+	) throws
+		NoEnoughCashError,
+		ValueWithInvalidMultipleError,
+		ATMOutOfBankNotesError,
+		InvalidTokenError,
+		ExpiredTokenError
 	{
 
 		Long accountNumber = Long.valueOf(String.valueOf(body.get("accountNumber")));
-		String token = (String) body.get("token");
 		Integer value = (Integer) body.get("value");
 
 		Session session = sessionVerifierHelper(accountNumber, token);
