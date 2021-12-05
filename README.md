@@ -1,6 +1,9 @@
 # ATM_Machine
 Demo Java Application simulating ATM operations
 
+## Demo
+![Analytics DEmo](analytics_demo.gif)
+
 ## Installation
 Clone the application:
 ```
@@ -10,8 +13,19 @@ git clone https://github.com/marcelus20/ATM_Machine
 Build and Run Application using docker-compose
 
 ```bash
+# Navigate to root folder
+cd ATM_Machine
 #run application
-docker-compose build && docker-compose up
+docker-compose up --build
+```
+
+**Note** If you need sudo to run docker, then you need to enter the following command instead:
+
+```bash
+# Navigate to root folder
+cd ATM_Machine
+#run application
+sudo docker-compose up --build
 ```
 
 When the above command completes and enviroments are up and running, you can access the **ATM Analytics** at [localhost:3000](http://localhost:3000) and **Backend Rest** at [localhost:8080](http://localhost:8080).
